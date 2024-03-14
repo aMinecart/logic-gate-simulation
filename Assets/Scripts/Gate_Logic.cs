@@ -2,74 +2,135 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
-public class Gate_Logic : MonoBehaviour
+public class GateLogic : MonoBehaviour
 {
-    public string type = "AND";
-    
-    public GameObject source_1;
-    public GameObject source_2;
+    private GateController gate_controller;
 
-    [SerializeField] private bool input_1 = false;
-    [SerializeField] private bool input_2 = false;
+    private GateTypes gate_type { get; set; } = GateTypes.OR;
+    public int gate_type_as_num { get; set; } = 0;
 
+    [HideInInspector] public GameObject input_gate_1;
+    [HideInInspector] public GameObject input_gate_2;
+
+    public bool input_1 = false;
+    public bool input_2 = false;
+
+    // please check if this warning is true
     // warning: this variable defaults to false. as a result, for the first cycle of the update function,
     // an input variable that depends on another gate for input will be always be false
-    public bool output { get; set; }
-
-    private enum gate_types
+    public bool output;
+    
+    public enum GateTypes
     {
-        NOT, AND, OR,
+        OR, AND, NOT,
         XOR,
-        NAND, NOR, XNOR
+        NOR, NAND, XNOR,
+        DOES_SHE_KNOW_HOW_TO_MAKE_A_GRILLED_CHEESE
     }
 
-    private bool calculate(string operation, bool in_1, bool in_2)
+    void Start()
     {
-        switch (operation)
+        gate_controller = GetComponent<GateController>();
+    }
+
+    private GateTypes calc_type(int identifier)
+    {
+        switch (identifier)
         {
-            case "NOT":
-                return !in_1;
-            case "AND":
-                return in_1 && in_2;
-            case "OR":
-                return in_1 || in_2;
-            case "XOR":
-                return in_1 != in_2;
-            case "NAND":
-                return !calculate("AND", in_1, in_2);
-            case "NOR":
-                return !calculate("OR", in_1, in_2);
-            case "XNOR":
-                return !calculate("XOR", in_1, in_2);
+            case 0:
+                return GateTypes.OR;
+            case 1:
+                return GateTypes.AND;
+            case 2:
+                return GateTypes.NOT;
+            case 3:
+                return GateTypes.XOR;
+            case 4:
+                return GateTypes.NOR;
+            case 5:
+                return GateTypes.NAND;
+            case 6:
+                return GateTypes.XNOR;
             default:
-                print("invalid type given");
-                break;
+                print("unexpected indentifier, defaulting to OR");
+                return GateTypes.OR;
+        }
+    }
+
+    private bool handle_output(GameObject gate, out bool result)
+    {
+        result = false;
+
+        if (gate == null)
+        {
+            return false;
         }
 
+        if (gate.TryGetComponent<GateLogic>(out GateLogic other_gate_logic))
+        {
+            result = other_gate_logic.output;
+            return true;
+        }
+
+        print("error, no gate logic component found");
         return false;
     }
 
-    private void calc_output()
+    private bool calculate(GateTypes operation, bool in_1, bool in_2)
     {
-        output = calculate(type, input_1, input_2);
+        switch (operation)
+        {
+            case GateTypes.NOT:
+                return !in_1;
+            case GateTypes.AND:
+                return in_1 && in_2;
+            case GateTypes.OR:
+                return in_1 || in_2;
+            case GateTypes.XOR:
+                return in_1 != in_2;
+            case GateTypes.NAND:
+                return !calculate(GateTypes.AND, in_1, in_2);
+            case GateTypes.NOR:
+                return !calculate(GateTypes.OR, in_1, in_2);
+            case GateTypes.XNOR:
+                return !calculate(GateTypes.XOR, in_1, in_2);
+            case GateTypes.DOES_SHE_KNOW_HOW_TO_MAKE_A_GRILLED_CHEESE:
+                return false;
+            default:
+                return in_1;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (source_1 != null && source_1.TryGetComponent(out Gate_Logic gate_one_logic))
+        gate_type = calc_type(gate_type_as_num);
+
+        if (handle_output(input_gate_1, out bool result_1))
         {
-            // success
-            input_1 = gate_one_logic.output;
+            input_1 = result_1;
         }
 
-        if (source_2 != null && source_2.TryGetComponent(out Gate_Logic gate_two_logic))
+        if (handle_output(input_gate_2, out bool result_2))
         {
-            // success
-            input_2 = gate_two_logic.output;
+            input_2 = result_2;
+        }
+        
+        if (gate_controller.menu_open_to_attached_gate)
+        {
+            gate_controller.toggle_1.isOn = input_1;
+            gate_controller.toggle_2.isOn = input_2;
         }
 
-        calc_output();
+        output = calculate(gate_type, input_1, input_2);
+
+        if (this.gameObject.name == "End Gate")
+        {
+            GetComponentInChildren<TextMeshPro>().SetText($"Output: {output}");
+        }
+
+        // print(gate_type);
     }
 }

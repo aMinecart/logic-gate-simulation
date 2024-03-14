@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Camera_Controller : MonoBehaviour
+public class CameraController : MonoBehaviour
 {
     [SerializeField] private InputReader input;
 
@@ -22,7 +22,7 @@ public class Camera_Controller : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         transform.position += new Vector3(move_direction.x, move_direction.y, 0.0f) * speed;
     }

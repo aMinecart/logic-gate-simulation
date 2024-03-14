@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Base_Event_Controller : MonoBehaviour
+public class BaseEventController : MonoBehaviour
 {
     [SerializeField] private InputReader input;
 
